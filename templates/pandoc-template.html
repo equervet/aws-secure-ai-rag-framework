@@ -92,6 +92,7 @@
       font-size: 0.9em;
     }
     pre {
+      position: relative;
       background: #0f172a;
       color: #e2e8f0;
       padding: 1rem;
@@ -99,6 +100,52 @@
       overflow-x: auto;
     }
     pre code { background: none; padding: 0; color: inherit; }
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    pre:hover .copy-btn, .copy-btn:focus { opacity: 1; }
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.18); }
+    .copy-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; opacity: 1; }
+    /* Pure-CSS tabs (radio + label pattern) for PowerShell/Bash code samples */
+    .code-tabs { margin: 1.25rem 0; }
+    .code-tabs__input { position: absolute; opacity: 0; pointer-events: none; }
+    .code-tabs__label {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      margin: 0 0.25rem -1px 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      background: #f3f4f6;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .code-tabs__input:checked + .code-tabs__label {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-color: #0f172a;
+    }
+    .code-tabs__panel {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 0 8px 8px 8px;
+      overflow: hidden;
+    }
+    .code-tabs__panel pre { margin: 0; border-radius: 0; }
+    .code-tabs__input:first-of-type:checked ~ .code-tabs__panel--ps { display: block; }
+    .code-tabs__input:last-of-type:checked ~ .code-tabs__panel--bash { display: block; }
     blockquote {
       margin: 1.25rem 0;
       padding: 0.75rem 1.25rem;
@@ -135,5 +182,38 @@ $body$
   <footer class="site-footer">
     <p>AWS Secure AI RAG Framework</p>
   </footer>
+  <script>
+    // Keep every code-tabs widget on the page in sync: picking a language in one updates all of them.
+    document.querySelectorAll('.code-tabs__input').forEach(function (input) {
+      input.addEventListener('change', function () {
+        if (!input.checked) return;
+        var lang = input.classList.contains('code-tabs__input--bash') ? 'bash' : 'ps';
+        document.querySelectorAll('.code-tabs__input--' + lang).forEach(function (match) {
+          match.checked = true;
+        });
+      });
+    });
+
+    // Add a copy-to-clipboard button to every code block.
+    document.querySelectorAll('main pre').forEach(function (pre) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'copy-btn';
+      button.textContent = 'Copy';
+      button.addEventListener('click', function () {
+        var code = pre.querySelector('code');
+        var text = code ? code.textContent : pre.textContent;
+        navigator.clipboard.writeText(text).then(function () {
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+          setTimeout(function () {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+          }, 1500);
+        });
+      });
+      pre.appendChild(button);
+    });
+  </script>
 </body>
 </html>

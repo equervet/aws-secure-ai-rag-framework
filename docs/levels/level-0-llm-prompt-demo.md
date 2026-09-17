@@ -66,7 +66,19 @@ That estimate assumes:
 
 Deploy [templates/cloudformation/level-0-llm-prompt-demo.yaml](../../templates/cloudformation/level-0-llm-prompt-demo.yaml) with the CloudFormation CLI:
 
+**PowerShell**
+
 ```powershell
+aws cloudformation deploy `
+  --template-file templates/cloudformation/level-0-llm-prompt-demo.yaml `
+  --stack-name aws-secure-ai-rag-llm-prompt-demo `
+  --capabilities CAPABILITY_NAMED_IAM `
+  --parameter-overrides BedrockModelId=us.amazon.nova-lite-v1:0
+```
+
+**Bash**
+
+```bash
 aws cloudformation deploy \
   --template-file templates/cloudformation/level-0-llm-prompt-demo.yaml \
   --stack-name aws-secure-ai-rag-llm-prompt-demo \
@@ -76,7 +88,18 @@ aws cloudformation deploy \
 
 After deployment, copy the **`ApiKeySecretArn`** stack output and retrieve the generated key:
 
+**PowerShell**
+
 ```powershell
+aws secretsmanager get-secret-value `
+  --secret-id <ApiKeySecretArn> `
+  --query SecretString `
+  --output text
+```
+
+**Bash**
+
+```bash
 aws secretsmanager get-secret-value \
   --secret-id <ApiKeySecretArn> \
   --query SecretString \

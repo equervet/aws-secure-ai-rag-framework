@@ -52,6 +52,7 @@ jobs:
             nav_home=$(realpath --relative-to="$dir" docs/index.html)
             nav_level0=$(realpath --relative-to="$dir" docs/levels/level-0-llm-prompt-demo.html)
             pandoc "$md" --template=templates/pandoc-template.html --standalone \
+              --lua-filter=templates/pandoc-filters/code-tabs.lua \
               --metadata title="${title:-Untitled}" \
               --metadata nav_home="$nav_home" \
               --metadata nav_level0="$nav_level0" \
