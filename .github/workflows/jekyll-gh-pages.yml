@@ -39,6 +39,10 @@ jobs:
       - name: Copy README.md as docs index
         run: cp README.md docs/index.md
 
+      - name: Remove GitHub-only callout from generated index
+        # this line only makes sense when read on GitHub itself, not on the hosted site it points to
+        run: sed -i '/on the GitHub Pages-hosted/d' docs/index.md
+
       - name: Remove stale HTML files
         run: find docs -name '*.html' -delete
 
