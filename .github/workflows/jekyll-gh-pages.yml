@@ -83,6 +83,38 @@ jobs:
               rel=$(realpath --relative-to="$dir" "$target_html")
               esc_link=$(printf '%s' "$link" | sed 's/[.[\*^$/]/\\&/g')
               sed -i "s#href=\"$esc_link\"#href=\"$rel\"#g" "$html"
+              # when the visible link text is the raw .md path (e.g. [foo.md](foo.md)),
+              # display the .html filename so the rendered text matches the linked page
+              link_html="${link%.md}.html"
+              sed -i "s#>$esc_link<#>$link_html<#g" "$html"
+            done
+          done
+
+      - name: Rewrite non-doc relative links to absolute GitHub URLs
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          # any relative link that doesn't resolve to a page we publish under docs/
+          # points at a repo file not included in the site (templates, examples, source code, etc.);
+          # rewrite those to absolute GitHub blob URLs so they still work from the hosted pages
+          docs_root=$(realpath docs)
+          repo_root=$(dirname "$docs_root")
+          find docs -name '*.html' | while read -r html; do
+            dir=$(dirname "$html")
+            base_dir="$dir"
+            [[ "$html" == "docs/index.html" ]] && base_dir="$repo_root"
+
+            grep -oE 'href="[^"]+"' "$html" | sed -E 's/^href="(.*)"$/\1/' | sort -u | while read -r link; do
+              case "$link" in
+                http://*|https://*|mailto:*|\#*|*.html) continue ;;
+              esac
+              target=$(realpath -m "$base_dir/$link")
+              [[ "$target" == "$docs_root"/* ]] && continue
+              [[ -f "$target" ]] || continue
+              rel_to_repo=$(realpath --relative-to="$repo_root" "$target")
+              abs_url="https://github.com/$REPO/blob/main/$rel_to_repo"
+              esc_link=$(printf '%s' "$link" | sed 's/[.[\*^$/]/\\&/g')
+              sed -i "s#href=\"$esc_link\"#href=\"$abs_url\"#g" "$html"
             done
           done
 

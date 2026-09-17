@@ -156,6 +156,47 @@
     }
     blockquote p { margin: 0; }
     ul, ol { padding-left: 1.4rem; }
+    main img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: zoom-in;
+    }
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.85);
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      cursor: zoom-out;
+    }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-overlay img {
+      max-width: min(90vw, 1400px);
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      cursor: default;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      border-radius: 6px;
+      width: 2.25rem;
+      height: 2.25rem;
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .lightbox-close:hover { background: rgba(255, 255, 255, 0.2); }
     footer.site-footer {
       text-align: center;
       color: var(--muted);
@@ -182,6 +223,10 @@ $body$
   <footer class="site-footer">
     <p>AWS Secure AI RAG Framework</p>
   </footer>
+  <div class="lightbox-overlay" id="lightbox-overlay">
+    <button type="button" class="lightbox-close" aria-label="Close">&times;</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
   <script>
     // Keep every code-tabs widget on the page in sync: picking a language in one updates all of them.
     document.querySelectorAll('.code-tabs__input').forEach(function (input) {
@@ -213,6 +258,29 @@ $body$
         });
       });
       pre.appendChild(button);
+    });
+
+    // Clicking an inline image opens an enlarged version in a modal overlay.
+    var overlay = document.getElementById('lightbox-overlay');
+    var overlayImg = document.getElementById('lightbox-img');
+    function closeLightbox() {
+      overlay.classList.remove('open');
+      overlayImg.src = '';
+    }
+    document.querySelectorAll('main img').forEach(function (img) {
+      img.addEventListener('click', function () {
+        overlayImg.src = img.src;
+        overlayImg.alt = img.alt;
+        overlay.classList.add('open');
+      });
+    });
+    overlay.addEventListener('click', closeLightbox);
+    document.querySelector('.lightbox-close').addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeLightbox();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeLightbox();
     });
   </script>
 </body>

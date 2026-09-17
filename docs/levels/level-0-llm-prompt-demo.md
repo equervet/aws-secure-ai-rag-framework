@@ -8,7 +8,6 @@ This demonstrates **grounded prompting, not retrieval-augmented generation (RAG)
 
 ## Level 0 Assets
 
-- Architecture diagram: [Level 0 architecture image](images/level-0-architecture.png)
 - CloudFormation: [Level 0 prompt demo template](../../templates/cloudformation/level-0-llm-prompt-demo.yaml)
 - Sample app: [Level 0 prompt demo example](../../examples/level-0-llm-prompt-demo/README.md)
 - Architecture: ![Level 0 architecture](images/level-0-architecture.png)
