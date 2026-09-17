@@ -85,27 +85,7 @@ aws cloudformation deploy \
   --parameter-overrides BedrockModelId=us.amazon.nova-lite-v1:0
 ```
 
-After deployment, copy the **`ApiKeySecretArn`** stack output and retrieve the generated key:
-
-**PowerShell**
-
-```powershell
-aws secretsmanager get-secret-value `
-  --secret-id <ApiKeySecretArn> `
-  --query SecretString `
-  --output text
-```
-
-**Bash**
-
-```bash
-aws secretsmanager get-secret-value \
-  --secret-id <ApiKeySecretArn> \
-  --query SecretString \
-  --output text
-```
-
-Open the **`AppUrl`** stack output and enter that key in the test page. API Gateway requires it in the **`x-api-key` header only for `POST /ask`**; **`GET /start-here` remains public**.
+Open the **`AppUrl`** stack output, that already includes the api-key. API Gateway requires it in the **`x-api-key` header only for `POST /ask`**; **`GET /start-here` remains public**.
 
 ⚠️ **Warning: Avoid unexpected AWS charges**
 **Always delete the CloudFormation stack after use** to avoid recurring charges. After deleting the stack, manually check the related AWS services to confirm that all resources have been successfully removed.
