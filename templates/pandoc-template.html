@@ -1,18 +1,219 @@
 <!-- template.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>$title$</title>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXX"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-6132VXY7GX"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
     gtag("js", new Date());
-    gtag("config", "G-XXX");
+    gtag("config", "G-6132VXY7GX");
   </script>
+  <style>
+    :root {
+      --nav-bg: #10213c;
+      --nav-fg: #f5f7fa;
+      --accent: #3b82f6;
+      --text: #1f2937;
+      --muted: #9ca3af;
+      --bg: #ffffff;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.65;
+    }
+    nav.site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--nav-bg);
+      color: var(--nav-fg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    nav.site-nav a.brand {
+      color: var(--nav-fg);
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1.05rem;
+    }
+    nav.site-nav ul {
+      list-style: none;
+      display: flex;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0;
+      flex-wrap: wrap;
+    }
+    nav.site-nav a.nav-link {
+      color: var(--nav-fg);
+      text-decoration: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: background 0.15s ease;
+    }
+    nav.site-nav a.nav-link:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    nav.site-nav span.nav-link.disabled {
+      color: rgba(245, 247, 250, 0.4);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+      cursor: default;
+    }
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    h1, h2, h3, h4 { line-height: 1.3; }
+    h1 { font-size: 2rem; margin-top: 0; }
+    h2 { font-size: 1.5rem; margin-top: 2.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.2rem; margin-top: 2rem; }
+    a { color: var(--accent); }
+    code {
+      background: #f3f4f6;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    pre {
+      position: relative;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    pre:hover .copy-btn, .copy-btn:focus { opacity: 1; }
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.18); }
+    .copy-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; opacity: 1; }
+    /* Pure-CSS tabs (radio + label pattern) for PowerShell/Bash code samples */
+    .code-tabs { margin: 1.25rem 0; }
+    .code-tabs__input { position: absolute; opacity: 0; pointer-events: none; }
+    .code-tabs__label {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      margin: 0 0.25rem -1px 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      background: #f3f4f6;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .code-tabs__input:checked + .code-tabs__label {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-color: #0f172a;
+    }
+    .code-tabs__panel {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 0 8px 8px 8px;
+      overflow: hidden;
+    }
+    .code-tabs__panel pre { margin: 0; border-radius: 0; }
+    .code-tabs__input:first-of-type:checked ~ .code-tabs__panel--ps { display: block; }
+    .code-tabs__input:last-of-type:checked ~ .code-tabs__panel--bash { display: block; }
+    blockquote {
+      margin: 1.25rem 0;
+      padding: 0.75rem 1.25rem;
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      border-radius: 0 6px 6px 0;
+      color: #78350f;
+    }
+    blockquote p { margin: 0; }
+    ul, ol { padding-left: 1.4rem; }
+    footer.site-footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
 </head>
 <body>
+  <nav class="site-nav">
+    <a class="brand" href="$nav_home$">AWS Secure AI RAG Framework</a>
+    <ul>
+      <li><a class="nav-link" href="$nav_home$">Home</a></li>
+      <li><a class="nav-link" href="$nav_level0$">Level 0</a></li>
+      <li><span class="nav-link disabled" title="Coming soon">Level 1</span></li>
+      <li><span class="nav-link disabled" title="Coming soon">Level 2</span></li>
+      <li><span class="nav-link disabled" title="Coming soon">Level 3</span></li>
+    </ul>
+  </nav>
+  <main>
 $body$
+  </main>
+  <footer class="site-footer">
+    <p>AWS Secure AI RAG Framework</p>
+  </footer>
+  <script>
+    // Keep every code-tabs widget on the page in sync: picking a language in one updates all of them.
+    document.querySelectorAll('.code-tabs__input').forEach(function (input) {
+      input.addEventListener('change', function () {
+        if (!input.checked) return;
+        var lang = input.classList.contains('code-tabs__input--bash') ? 'bash' : 'ps';
+        document.querySelectorAll('.code-tabs__input--' + lang).forEach(function (match) {
+          match.checked = true;
+        });
+      });
+    });
+
+    // Add a copy-to-clipboard button to every code block.
+    document.querySelectorAll('main pre').forEach(function (pre) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'copy-btn';
+      button.textContent = 'Copy';
+      button.addEventListener('click', function () {
+        var code = pre.querySelector('code');
+        var text = code ? code.textContent : pre.textContent;
+        navigator.clipboard.writeText(text).then(function () {
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+          setTimeout(function () {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+          }, 1500);
+        });
+      });
+      pre.appendChild(button);
+    });
+  </script>
 </body>
 </html>

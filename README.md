@@ -1,5 +1,10 @@
 # AWS Secure AI RAG Framework
 
+[![ShellCheck](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/shellcheck.yml)
+[![PSScriptAnalyzer](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/psscriptanalyzer.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/psscriptanalyzer.yml)
+[![CodeQL](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/codeql.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/codeql.yml)
+[![Semgrep](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/semgrep.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/semgrep.yml)
+
 Open-source guidance for building secure AI and retrieval-augmented generation solutions with a practical AWS implementation path, level-based architecture guidance, infrastructure templates, and deployment guidance.
 
 This project is AWS-first where security controls need concrete examples, but it aims to stay cloud-aware and portable at the design level whenever possible.
@@ -18,7 +23,7 @@ The framework has **three maturity levels plus a Level 0 teaching demo**. Reader
 
 The simplest teaching path stores fixed knowledge in Lambda (no RAG storage). Level 0 shows grounded prompting, not RAG, because there's no step to retrieve document knowledge.
 
-> 🚧 **Coming soon** — content for this section is in progress.
+See [docs/levels/level-0-llm-prompt-demo.md](docs/levels/level-0-llm-prompt-demo.md)
 
 ### Level 1: Starter
 

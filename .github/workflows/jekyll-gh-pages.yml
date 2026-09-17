@@ -6,6 +6,10 @@ on:
   push:
     branches: ["main"]
 
+  # Runs as a validation check on pull requests targeting the default branch
+  pull_request:
+    branches: ["main"]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -38,11 +42,45 @@ jobs:
       - name: Remove stale HTML files
         run: find docs -name '*.html' -delete
 
+      - name: Remove index.md before conversion
+        run: rm -f docs/index.md
+
       - name: Convert markdown to HTML
         run: |
           find docs -name '*.md' | while read -r md; do
             html="${md%.md}.html"
-            pandoc "$md" --template=templates/pandoc-template.html --standalone -o "$html"
+            dir=$(dirname "$md")
+            title=$(grep -m 1 '^# ' "$md" | sed 's/^# *//')
+            # links are computed relative to each file so the nav works at any folder depth
+            nav_home=$(realpath --relative-to="$dir" docs/index.html)
+            nav_level0=$(realpath --relative-to="$dir" docs/levels/level-0-llm-prompt-demo.html)
+            pandoc "$md" --template=templates/pandoc-template.html --standalone \
+              --lua-filter=templates/pandoc-filters/code-tabs.lua \
+              --metadata title="${title:-Untitled}" \
+              --metadata nav_home="$nav_home" \
+              --metadata nav_level0="$nav_level0" \
+              -o "$html"
+          done
+
+      - name: Rewrite internal markdown links to generated HTML
+        run: |
+          # source .md files keep linking to .md (for GitHub rendering); only the generated
+          # HTML output is rewritten here, and only for links that resolve to a page we publish
+          docs_root=$(realpath docs)
+          find docs -name '*.html' | while read -r html; do
+            dir=$(dirname "$html")
+            # the root README.md is published as docs/index.html
+            home_rel=$(realpath --relative-to="$dir" docs/index.html)
+            sed -i "s#href=\"/README\.md\"#href=\"$home_rel\"#g" "$html"
+
+            grep -oE 'href="[^"]+\.md"' "$html" | sed -E 's/^href="(.*)"$/\1/' | sort -u | while read -r link; do
+              target_md=$(realpath -m "$dir/$link")
+              [[ "$target_md" == "$docs_root"/* && -f "$target_md" ]] || continue
+              target_html="${target_md%.md}.html"
+              rel=$(realpath --relative-to="$dir" "$target_html")
+              esc_link=$(printf '%s' "$link" | sed 's/[.[\*^$/]/\\&/g')
+              sed -i "s#href=\"$esc_link\"#href=\"$rel\"#g" "$html"
+            done
           done
 
       - name: Setup Pages
@@ -53,8 +91,9 @@ jobs:
         with:
           path: ./docs
 
-  # Deployment job
+  # Deployment job (skipped for pull request validation builds)
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

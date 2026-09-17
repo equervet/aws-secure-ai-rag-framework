@@ -1,0 +1,42 @@
+name: SemgrepScriptScan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.sh"
+      - "**/*.bash"
+      - "**/*.ps1"
+      - "**/*.psm1"
+      - "**/*.psd1"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.sh"
+      - "**/*.bash"
+      - "**/*.ps1"
+      - "**/*.psm1"
+      - "**/*.psd1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep@sha256:d1825c2c72110b5bfbf0602ff68f7f117322597a7c33037a79dba9f897f5f1f0 # 1.177.0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run Semgrep
+        run: semgrep scan --config p/default --config p/secrets --sarif --output=results.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: results.sarif
+        if: always()
