@@ -42,6 +42,9 @@ jobs:
       - name: Remove stale HTML files
         run: find docs -name '*.html' -delete
 
+      - name: Remove index.md before conversion
+        run: rm -f docs/index.md
+
       - name: Convert markdown to HTML
         run: |
           find docs -name '*.md' | while read -r md; do

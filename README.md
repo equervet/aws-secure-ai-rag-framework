@@ -23,7 +23,7 @@ The framework has **three maturity levels plus a Level 0 teaching demo**. Reader
 
 The simplest teaching path stores fixed knowledge in Lambda (no RAG storage). Level 0 shows grounded prompting, not RAG, because there's no step to retrieve document knowledge.
 
-> 🚧 **Coming soon** — content for this section is in progress.
+See [docs/levels/level-0-llm-prompt-demo.md](docs/levels/level-0-llm-prompt-demo.md)
 
 ### Level 1: Starter
 
