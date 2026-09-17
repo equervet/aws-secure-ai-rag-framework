@@ -5,6 +5,8 @@
 [![CodeQL](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/codeql.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/codeql.yml)
 [![Semgrep](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/semgrep.yml/badge.svg)](https://github.com/equervet/aws-secure-ai-rag-framework/actions/workflows/semgrep.yml)
 
+Explore the full documentation with a better UI on the GitHub Pages-hosted [documentation site](https://equervet.github.io/aws-secure-ai-rag-framework/).
+
 Open-source guidance for building secure AI and retrieval-augmented generation solutions with a practical AWS implementation path, level-based architecture guidance, infrastructure templates, and deployment guidance.
 
 This project is AWS-first where security controls need concrete examples, but it aims to stay cloud-aware and portable at the design level whenever possible.
