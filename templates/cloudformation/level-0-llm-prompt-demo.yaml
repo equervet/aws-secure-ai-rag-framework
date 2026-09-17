@@ -1,0 +1,542 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Level 0 prompt-based LLM teaching demo for grounded prompting.
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: us.amazon.nova-lite-v1:0
+    Description: Bedrock inference profile ID available from the deployment region.
+
+Resources:
+  PromptDemoApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Generated API key for the Level 0 prompt-based LLM demo.
+      GenerateSecretString:
+        ExcludePunctuation: true
+        IncludeSpace: false
+        PasswordLength: 32
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BedrockOnlyAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource:
+                  - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${BedrockModelId}
+                  - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-lite-v1:0
+
+  PromptDemoFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+      Code:
+        ZipFile: |
+          const {
+            BedrockRuntimeClient,
+            InvokeModelCommand,
+          } = require("@aws-sdk/client-bedrock-runtime");
+
+          const bedrockClient = new BedrockRuntimeClient({});
+          const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID;
+
+          const HTML_PAGE = `<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Level 0 Prompt-Based LLM Demo</title>
+            <style>
+              :root { color-scheme: light; }
+              * { box-sizing: border-box; }
+              body {
+                min-height: 100vh;
+                margin: 0;
+                padding: 48px 24px;
+                background: linear-gradient(145deg, #071525 0%, #12345b 55%, #1f4b78 100%);
+                color: #172b4d;
+                font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              }
+              main {
+                max-width: 840px;
+                margin: 0 auto;
+                padding: 40px;
+                background: #f8fafc;
+                border: 1px solid #bfd3e6;
+                border-radius: 20px;
+                box-shadow: 0 24px 60px rgba(2, 12, 27, 0.35);
+              }
+              .eyebrow {
+                margin: 0 0 8px;
+                color: #9a4d00;
+                font-size: 0.8rem;
+                font-weight: 800;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+              }
+              h1 { margin: 0 0 12px; color: #0b2748; line-height: 1.15; }
+              .intro { margin: 0 0 28px; color: #425b76; line-height: 1.6; }
+              label { display: block; margin-bottom: 8px; color: #163a5f; font-weight: 700; }
+              input, textarea, button { width: 100%; font: inherit; }
+              input, textarea {
+                min-height: 140px;
+                padding: 14px;
+                margin: 0 0 16px;
+                background: #ffffff;
+                color: #172b4d;
+                border: 2px solid #9db8d1;
+                border-radius: 12px;
+              }
+              input { min-height: auto; }
+              textarea { resize: vertical; }
+              input:focus, textarea:focus { border-color: #146eb4; outline: 3px solid rgba(20, 110, 180, 0.2); }
+              button {
+                padding: 13px 18px;
+                background: #ff9900;
+                color: #17212b;
+                border: 0;
+                border-radius: 12px;
+                font-weight: 800;
+                cursor: pointer;
+                transition: background 150ms ease, transform 150ms ease;
+              }
+              button:hover { background: #ffad32; transform: translateY(-1px); }
+              button:focus-visible { outline: 3px solid #146eb4; outline-offset: 3px; }
+              button:disabled { cursor: wait; opacity: 0.65; transform: none; }
+              #status { min-height: 24px; color: #425b76; }
+              .answer {
+                margin-top: 20px;
+                padding: 18px;
+                background: #eaf4fc;
+                color: #102a43;
+                border: 1px solid #8ebadd;
+                border-left: 5px solid #146eb4;
+                border-radius: 12px;
+                line-height: 1.6;
+                white-space: pre-wrap;
+              }
+              @media (max-width: 600px) {
+                body { padding: 20px 12px; }
+                main { padding: 26px 20px; border-radius: 16px; }
+              }
+            </style>
+          </head>
+          <body>
+            <main>
+              <p class="eyebrow">Level 0 teaching demo</p>
+              <h1>Level 0 Prompt-Based LLM Demo</h1>
+              <p class="intro">Ask a question about the fixed prompt context to see grounded prompting without a retrieval step.</p>
+              <label for="apiKey">API key</label>
+              <input id="apiKey" type="password" autocomplete="off" placeholder="Enter the API key from Secrets Manager">
+              <label for="question">Your question</label>
+              <textarea id="question">Why is this demo not considered RAG?</textarea>
+              <button id="submit" type="button">Ask</button>
+              <p id="status"></p>
+              <div id="answer" class="answer" hidden></div>
+            </main>
+            <script>
+              const submitButton = document.getElementById("submit");
+              const apiKeyInput = document.getElementById("apiKey");
+              const questionInput = document.getElementById("question");
+              const statusNode = document.getElementById("status");
+              const answerNode = document.getElementById("answer");
+
+              const queryParameters = new URLSearchParams(window.location.search);
+              apiKeyInput.value = queryParameters.has("apikey")
+                ? queryParameters.get("apikey") || ""
+                : window.localStorage.getItem("level0ApiKey") || "";
+
+              submitButton.addEventListener("click", async () => {
+                const apiKey = apiKeyInput.value.trim();
+                const question = questionInput.value.trim();
+                answerNode.hidden = true;
+                if (!apiKey || !question) {
+                  statusNode.textContent = "Enter both the API key and a question.";
+                  return;
+                }
+
+                window.localStorage.setItem("level0ApiKey", apiKey);
+                submitButton.disabled = true;
+                statusNode.textContent = "Querying the prompt-based LLM demo...";
+                try {
+                  const response = await fetch("./ask", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-api-key": apiKey
+                    },
+                    body: JSON.stringify({ question })
+                  });
+                  const payload = await response.json();
+                  if (!response.ok) {
+                    throw new Error(payload.message || "Request failed.");
+                  }
+                  answerNode.textContent = payload.answer || "No answer returned.";
+                  answerNode.hidden = false;
+                  statusNode.textContent = "Request completed.";
+                } catch (error) {
+                  statusNode.textContent = error.message;
+                } finally {
+                  submitButton.disabled = false;
+                }
+              });
+            </script>
+          </body>
+          </html>`;
+
+          const PROMPT_CONTEXT = `
+          Level 1 security defaults include least-privilege IAM, encryption at rest, CloudWatch logging, curated knowledge sources, and no hardcoded secrets.
+
+          The main Level 1 architecture uses API Gateway, Lambda, S3, and Amazon Bedrock.
+
+          The prompt-based LLM demo is intended only for teaching because it has no retrieval step and knowledge updates require redeployment.
+          `.trim();
+
+          function buildPrompt(question) {
+            return [
+              "You are a secure AWS starter assistant. Use only the provided prompt context.",
+              "If the answer is not present, say the prompt-based LLM demo does not contain it.",
+              "",
+              `Prompt context:\n${PROMPT_CONTEXT}`,
+              "",
+              `Question: ${question}`,
+              "",
+              "Answer concisely.",
+            ].join("\n");
+          }
+
+          async function invokeBedrock(prompt) {
+            const payload = {
+              schemaVersion: "messages-v1",
+              messages: [{
+                role: "user",
+                content: [{ text: prompt }],
+              }],
+              inferenceConfig: {
+                maxTokens: 512,
+                temperature: 0.2,
+              },
+            };
+
+            const response = await bedrockClient.send(
+              new InvokeModelCommand({
+                modelId: BEDROCK_MODEL_ID,
+                body: JSON.stringify(payload),
+                contentType: "application/json",
+                accept: "application/json",
+              })
+            );
+            const responseBody = JSON.parse(
+              new TextDecoder().decode(response.body)
+            );
+            const content = responseBody.output?.message?.content ?? [];
+            const answer = content
+              .filter((entry) => entry && typeof entry.text === "string")
+              .map((entry) => entry.text)
+              .filter(Boolean)
+              .join("\n")
+              .trim();
+
+            return answer || "No response text returned by the model.";
+          }
+
+          function jsonResponse(statusCode, body) {
+            return {
+              statusCode,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            };
+          }
+
+          exports.handler = async (event) => {
+            const method =
+              event?.requestContext?.http?.method ?? event?.httpMethod ?? "";
+            const path = event?.rawPath ?? event?.path ?? "";
+
+            if (method === "GET" && path === "/start-here") {
+              return {
+                statusCode: 200,
+                headers: { "Content-Type": "text/html; charset=utf-8" },
+                body: HTML_PAGE,
+              };
+            }
+            if (method !== "POST" || path !== "/ask") {
+              return jsonResponse(404, { message: "Not found" });
+            }
+
+            let requestBody;
+            try {
+              requestBody = JSON.parse(event.body || "{}");
+            } catch {
+              return jsonResponse(400, {
+                message: "request body must be valid JSON",
+              });
+            }
+
+            const question =
+              typeof requestBody.question === "string"
+                ? requestBody.question.trim()
+                : "";
+            if (!question) {
+              return jsonResponse(400, { message: "question is required" });
+            }
+
+            try {
+              const answer = await invokeBedrock(buildPrompt(question));
+              return jsonResponse(200, {
+                answer,
+                variant: "llm-prompt-demo",
+              });
+            } catch (error) {
+              console.error("Bedrock invocation failed", {
+                name: error.name,
+                message: error.message,
+                requestId: error.$metadata?.requestId,
+              });
+              return jsonResponse(502, {
+                message: "The model could not be invoked. Check the configured inference profile and Bedrock access.",
+              });
+            }
+          };
+
+  ApiKeyOutputRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ReadPromptDemoApiKey
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref PromptDemoApiKeySecret
+
+  ApiKeyOutputFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt ApiKeyOutputRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: |
+          const https = require("https");
+          const {
+            SecretsManagerClient,
+            GetSecretValueCommand,
+          } = require("@aws-sdk/client-secrets-manager");
+
+          const secretsManager = new SecretsManagerClient({});
+
+          function sendResponse(event, status, data, reason, context) {
+            const responseBody = JSON.stringify({
+              Status: status,
+              Reason: reason || `See CloudWatch Log Stream: ${context.logStreamName}`,
+              PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
+              StackId: event.StackId,
+              RequestId: event.RequestId,
+              LogicalResourceId: event.LogicalResourceId,
+              NoEcho: false,
+              Data: data,
+            });
+
+            return new Promise((resolve, reject) => {
+              const request = https.request(event.ResponseURL, {
+                method: "PUT",
+                headers: {
+                  "content-type": "",
+                  "content-length": Buffer.byteLength(responseBody),
+                },
+              }, resolve);
+              request.on("error", reject);
+              request.write(responseBody);
+              request.end();
+            });
+          }
+
+          exports.handler = async (event, context) => {
+            try {
+              if (event.RequestType === "Delete") {
+                await sendResponse(event, "SUCCESS", {}, undefined, context);
+                return;
+              }
+
+              const response = await secretsManager.send(
+                new GetSecretValueCommand({
+                  SecretId: event.ResourceProperties.SecretArn,
+                })
+              );
+              await sendResponse(event, "SUCCESS", {
+                ApiKey: response.SecretString,
+              }, undefined, context);
+            } catch (error) {
+              console.error("Unable to retrieve the demo API key", error);
+              await sendResponse(
+                event,
+                "FAILED",
+                {},
+                error.message,
+                context
+              );
+            }
+          };
+
+  ApiKeyOutputFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiKeyOutputFunction
+      Principal: cloudformation.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  ApiKeyOutput:
+    Type: Custom::ApiKeyOutput
+    DependsOn:
+      - ApiKeyOutputFunctionPermission
+      - PromptDemoApiKey
+    Properties:
+      ServiceToken: !GetAtt ApiKeyOutputFunction.Arn
+      SecretArn: !Ref PromptDemoApiKeySecret
+
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: llm-prompt-demo-api
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  StartHereResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: start-here
+
+  AskResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: ask
+
+  StartHereMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref StartHereResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PromptDemoFunction.Arn}/invocations
+
+  AskMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref AskResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PromptDemoFunction.Arn}/invocations
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - StartHereMethod
+      - AskMethod
+    Properties:
+      RestApiId: !Ref RestApi
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref RestApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: demo
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: "*"
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 10
+
+  PromptDemoApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: ApiStage
+    Properties:
+      Name: !Sub ${AWS::StackName}-api-key
+      Description: API key for POST /ask in the Level 0 prompt-based LLM demo.
+      Enabled: true
+      Value: !Sub "{{resolve:secretsmanager:${PromptDemoApiKeySecret}:SecretString}}"
+
+  PromptDemoUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      UsagePlanName: !Sub ${AWS::StackName}-usage-plan
+      Description: Low-rate usage plan for the public Level 0 demo.
+      ApiStages:
+        - ApiId: !Ref RestApi
+          Stage: !Ref ApiStage
+      Throttle:
+        RateLimit: 10
+        BurstLimit: 10
+
+  PromptDemoUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref PromptDemoApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref PromptDemoUsagePlan
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PromptDemoFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/*/*
+
+Outputs:
+  AppUrl:
+    Value: !Sub https://${RestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/demo/start-here?apikey=${ApiKeyOutput.ApiKey}
+  ApiKeyValue:
+    Description: API key value for this teaching demo.
+    Value: !GetAtt ApiKeyOutput.ApiKey
